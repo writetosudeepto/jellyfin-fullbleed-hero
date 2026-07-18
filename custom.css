@@ -1,23 +1,6 @@
-/*
- * Jellyfin — Full-Bleed Media Bar Hero
- *
- * Base theme: Abyss (https://github.com/AumGupta/abyss-jellyfin)
- * Hero/slideshow: Media Bar plugin (https://github.com/IAmParadox27/jellyfin-plugin-media-bar)
- *
- * Paste this entire file into:
- *   Dashboard → General → Branding → Custom CSS
- *
- * What it does on top of the stock Abyss + Media Bar combo:
- *   1. Hero (backdrop image AND trailer video) fills the entire viewport,
- *      edge to edge — no bottom black band, no fade-out border.
- *   2. Home rows start exactly one viewport down, flush under the hero,
- *      on every client (desktop, mobile web, Android app) — no dead gap.
- *   3. Mobile polish for the Media Bar action buttons / metadata row.
- */
-
 @import url('https://cdn.jsdelivr.net/gh/AumGupta/abyss-jellyfin@main/abyss.css');
 
-/* ── Mobile fixes (narrow viewports) ── */
+/* ── Mobile fixes (S24 Ultra / narrow viewports) ── */
 
 /* Fix: action buttons spread too far apart due to space-between */
 .layout-mobile .button-container {
@@ -104,4 +87,55 @@
   top: 0 !important;
   margin-top: 100vh !important;
   margin-top: 100dvh !important;
+}
+
+/* ── Login page: Futurama 3D scene background (Sketchfab iframe injected by index.html) ── */
+
+/* Oversize vertically so Sketchfab's title bar and control bar are cropped off-screen */
+#loginSketchfab {
+  position: fixed;
+  left: 0;
+  width: 100vw;
+  top: -90px;
+  height: calc(100vh + 180px);
+  height: calc(100dvh + 180px);
+  border: 0;
+  z-index: 1;
+}
+
+#loginPage {
+  background: transparent !important;
+}
+
+/* Keep the login card above the iframe; clicks outside it orbit the 3D scene */
+#loginPage > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* More transparent login card + buttons so the 3D scene shows through */
+#loginPage .manualLoginForm {
+  background: rgba(20, 20, 20, 0.30) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+#loginPage .raised.block {
+  background: rgba(20, 20, 20, 0.45) !important;
+}
+
+/* Mobile: drop the vertical crop entirely so more of the scene and the
+   Sketchfab control bar are visible on small screens */
+@media (max-width: 768px) {
+  #loginSketchfab {
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+.layout-mobile #loginSketchfab {
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
 }
