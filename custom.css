@@ -1,0 +1,107 @@
+/*
+ * Jellyfin — Full-Bleed Media Bar Hero
+ *
+ * Base theme: Abyss (https://github.com/AumGupta/abyss-jellyfin)
+ * Hero/slideshow: Media Bar plugin (https://github.com/IAmParadox27/jellyfin-plugin-media-bar)
+ *
+ * Paste this entire file into:
+ *   Dashboard → General → Branding → Custom CSS
+ *
+ * What it does on top of the stock Abyss + Media Bar combo:
+ *   1. Hero (backdrop image AND trailer video) fills the entire viewport,
+ *      edge to edge — no bottom black band, no fade-out border.
+ *   2. Home rows start exactly one viewport down, flush under the hero,
+ *      on every client (desktop, mobile web, Android app) — no dead gap.
+ *   3. Mobile polish for the Media Bar action buttons / metadata row.
+ */
+
+@import url('https://cdn.jsdelivr.net/gh/AumGupta/abyss-jellyfin@main/abyss.css');
+
+/* ── Mobile fixes (narrow viewports) ── */
+
+/* Fix: action buttons spread too far apart due to space-between */
+.layout-mobile .button-container {
+  justify-content: flex-start !important;
+  gap: 12px !important;
+}
+
+@media (max-width: 430px) {
+  .button-container {
+    justify-content: flex-start !important;
+    gap: 12px !important;
+  }
+  .misc-info {
+    flex-wrap: wrap !important;
+    column-gap: 6px !important;
+    row-gap: 4px !important;
+  }
+  .star-rating-container, .critic-rating, .date, .age-rating, .runTime {
+    font-size: 0.82em !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Fix: meta info row cramped — allow wrapping */
+.layout-mobile .misc-info {
+  flex-wrap: wrap !important;
+  column-gap: 6px !important;
+  row-gap: 4px !important;
+}
+.layout-mobile .star-rating-container,
+.layout-mobile .critic-rating,
+.layout-mobile .date,
+.layout-mobile .age-rating,
+.layout-mobile .runTime {
+  font-size: 0.82em !important;
+  white-space: nowrap !important;
+}
+
+/* Fix play button text on mobile — keep touch target intact */
+.layout-mobile .play-text {
+  font-size: 0.88rem !important;
+  white-space: nowrap !important;
+}
+
+/* ── Media Bar: full-viewport edge-to-edge hero ── */
+
+/* Hero was 90% height, leaving a black band at the bottom of the viewport */
+#slides-container {
+  height: 100vh !important;
+  height: 100dvh !important;
+}
+
+/* Trailer video: drop the bottom fade-to-black, keep the left blend into the backdrop */
+.video-container {
+  mask-image: linear-gradient(to right, transparent 10%, black 30%) !important;
+  -webkit-mask-image: linear-gradient(to right, transparent 10%, black 30%) !important;
+}
+
+/* Backdrop image layers: remove bottom fade masks and rounded corners */
+.backdrop-container,
+.backdrop,
+.backdrop-overlay,
+.gradient-overlay {
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+  border-radius: 0 !important;
+}
+
+/* While the trailer plays, keep only the backdrop's horizontal blend into the video */
+.backdrop.with-video {
+  mask-image: linear-gradient(to right, black 30%, transparent 85%) !important;
+  -webkit-mask-image: linear-gradient(to right, black 30%, transparent 85%) !important;
+}
+
+/* Home rows: sit right below the full-screen hero on ALL clients.
+   The abyss spotlight iframe (.featurediframe) duplicates the Media Bar hero,
+   sits invisibly behind it, and only exists on some clients — hide it and use
+   a plain margin as the spacer so desktop and mobile behave the same. */
+.featurediframe {
+  display: none !important;
+}
+
+.homeSectionsContainer {
+  top: 0 !important;
+  margin-top: 100vh !important;
+  margin-top: 100dvh !important;
+}
