@@ -9,15 +9,19 @@
  *
  * What it does on top of the stock Abyss + Media Bar combo:
  *   1. Hero (backdrop image AND trailer video) fills the entire viewport,
- *      edge to edge — no bottom black band, no fade-out border.
- *   2. Home rows start exactly one viewport down, flush under the hero,
+ *      edge to edge — no masks, tints, gradients, or black bars on any side.
+ *   2. Trailer video plays full-viewport ON TOP of the backdrop; if YouTube
+ *      refuses to play (bot wall / missing trailer), the backdrop image stays
+ *      fully intact — no black areas. Trailers are also enabled on phones.
+ *   3. Home rows start exactly one viewport down, flush under the hero,
  *      on every client (desktop, mobile web, Android app) — no dead gap.
- *   3. Mobile polish for the Media Bar action buttons / metadata row.
+ *   4. Mobile polish for the Media Bar action buttons / metadata row.
+ *   5. Login page: full-screen Sketchfab 3D scene behind a translucent card.
  */
 
 @import url('https://cdn.jsdelivr.net/gh/AumGupta/abyss-jellyfin@main/abyss.css');
 
-/* ── Mobile fixes (narrow viewports) ── */
+/* ── Mobile fixes (S24 Ultra / narrow viewports) ── */
 
 /* Fix: action buttons spread too far apart due to space-between */
 .layout-mobile .button-container {
@@ -62,34 +66,62 @@
   white-space: nowrap !important;
 }
 
-/* ── Media Bar: full-viewport edge-to-edge hero ── */
+/* ── Media Bar: full-viewport hero, zero gradients/shadows/black bars ── */
 
-/* Hero was 90% height, leaving a black band at the bottom of the viewport */
+/* Hero fills the whole viewport */
 #slides-container {
   height: 100vh !important;
   height: 100dvh !important;
 }
 
-/* Trailer video: drop the bottom fade-to-black, keep the left blend into the backdrop */
-.video-container {
-  mask-image: linear-gradient(to right, transparent 10%, black 30%) !important;
-  -webkit-mask-image: linear-gradient(to right, transparent 10%, black 30%) !important;
-}
-
-/* Backdrop image layers: remove bottom fade masks and rounded corners */
+/* No masks, tints, gradients, or rounded corners on any hero layer, ever */
 .backdrop-container,
 .backdrop,
+.backdrop.with-video,
 .backdrop-overlay,
-.gradient-overlay {
+.gradient-overlay,
+.video-container {
   mask-image: none !important;
   -webkit-mask-image: none !important;
   border-radius: 0 !important;
 }
 
-/* While the trailer plays, keep only the backdrop's horizontal blend into the video */
+.backdrop-overlay,
+.gradient-overlay {
+  background: none !important;
+}
+
+/* Trailer video: full-viewport cover, layered above the backdrop image.
+   The plugin only adds .active (opacity 1) once YouTube reaches PLAYING,
+   so a blocked or missing trailer leaves the backdrop image fully intact —
+   no black areas on any side. */
+.video-container {
+  z-index: 4 !important;
+}
+
+/* Neutralize the plugin's split-screen layout: the backdrop stays
+   full-size whether or not a trailer is playing (the video simply
+   fades in on top). The old right-fade mask here is what caused the
+   mobile right-side black gradient — with-video masked the backdrop
+   while the video itself stayed hidden. */
 .backdrop.with-video {
-  mask-image: linear-gradient(to right, black 30%, transparent 85%) !important;
-  -webkit-mask-image: linear-gradient(to right, black 30%, transparent 85%) !important;
+  width: 100% !important;
+}
+.plot-container.with-video {
+  width: 90% !important;
+}
+
+/* Play trailers on phones too (the plugin hides them in portrait) */
+@media only screen and (max-width: 767px) and (orientation: portrait) {
+  .video-container {
+    display: block !important;
+  }
+  .volume-toggle i {
+    display: inline-block !important;
+  }
+  .backdrop.with-video {
+    width: 100% !important;
+  }
 }
 
 /* Home rows: sit right below the full-screen hero on ALL clients.
@@ -104,4 +136,55 @@
   top: 0 !important;
   margin-top: 100vh !important;
   margin-top: 100dvh !important;
+}
+
+/* ── Login page: Futurama 3D scene background (Sketchfab iframe injected by index.html) ── */
+
+/* Oversize vertically so Sketchfab's title bar and control bar are cropped off-screen */
+#loginSketchfab {
+  position: fixed;
+  left: 0;
+  width: 100vw;
+  top: -90px;
+  height: calc(100vh + 180px);
+  height: calc(100dvh + 180px);
+  border: 0;
+  z-index: 1;
+}
+
+#loginPage {
+  background: transparent !important;
+}
+
+/* Keep the login card above the iframe; clicks outside it orbit the 3D scene */
+#loginPage > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* More transparent login card + buttons so the 3D scene shows through */
+#loginPage .manualLoginForm {
+  background: rgba(20, 20, 20, 0.30) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+#loginPage .raised.block {
+  background: rgba(20, 20, 20, 0.45) !important;
+}
+
+/* Mobile: drop the vertical crop entirely so more of the scene and the
+   Sketchfab control bar are visible on small screens */
+@media (max-width: 768px) {
+  #loginSketchfab {
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+.layout-mobile #loginSketchfab {
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
 }
