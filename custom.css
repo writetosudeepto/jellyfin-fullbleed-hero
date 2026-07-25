@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Jellyfin — Full-Bleed Media Bar Hero
  *
  * Base theme: Abyss (https://github.com/AumGupta/abyss-jellyfin)
@@ -447,4 +447,16 @@
   #slides-container .pause-button i {
     font-size: 0.95rem !important;
   }
+}
+
+
+/* ── Volume / pause button: fix spacing on ALL screen sizes ──
+   Plugin default: volume right:3.5rem, pause right:0.8rem.
+   With 42 px circles the gap is 56-12.8-42 = 1.2 px — they touch.
+   Override right values to give a proper 10 px gap on every device.      */
+#slides-container .pause-button {
+  right: 14px !important;
+}
+#slides-container .volume-toggle {
+  right: 66px !important;
 }
