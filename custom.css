@@ -336,13 +336,26 @@ body:has(#slides-container) .skinHeader.headroom--not-top {
     gap: 10px !important;
   }
 
+  /* Card width is the one number worth tuning here. Reference points measured
+     on a 384px viewport, with the 10px gap included in the per-screen figure:
+
+       backdrop  72% (stock) = 276px -> 1.3/screen, one card owns the row
+                 56%         = 201px -> 1.9/screen, too small
+                 64% (now)   = 246px -> 1.5/screen
+       portrait  40% (stock) = 154px -> 2.4/screen
+                 32%         = 115px -> 3.2/screen, too small
+                 40% (now)   = back to stock; it was never the complaint
+
+     The original "square" problem was never portrait posters — it was backdrop
+     cards at 72% plus a desktop-sized text block. 64% keeps a second card
+     peeking in without shrinking the artwork. */
   .homeSectionsContainer .overflowBackdropCard {
-    width: 56% !important;
+    width: 64% !important;
   }
 
   .homeSectionsContainer .overflowPortraitCard,
   .homeSectionsContainer .overflowSquareCard {
-    width: 32% !important;
+    width: 40% !important;
   }
 
   /* The card already has 17px of internal horizontal padding that existed only
