@@ -574,16 +574,36 @@ body:has(#slides-container) .skinHeader.headroom--top {
   #slides-container {
     --trailer-control-size: 48px;
     --trailer-control-gap: 12px;
-    /* ABOVE the Info / Play / Favourite row. That row is anchored by the plugin
-       at `top: calc(50% + 25vh)` of the hero, i.e. 0.75 x hero height, so its
-       top edge sits 25vh up from the bottom. Expressing the chips in the same
-       unit keeps the two rows locked together at any viewport height instead of
-       drifting apart on a shorter screen: 25vh clears the CTA row exactly, and
-       the +24px is the visual gap between the two rows. */
-    --trailer-control-bottom: calc(25vh + 24px);
     --trailer-control-half-row: 54px;
     --trailer-control-half-gap: 6px;
+
+    /* Single anchor for the whole bottom cluster, measured from the bottom of
+       the hero. The plugin's own anchor (`top: calc(50% + 25vh)`) pins the CTA
+       row at 0.75x hero height, which on a phone leaves it floating in the
+       middle of the frame and cutting the trailer in half. Everything below is
+       derived from this one value, so the group moves together and the trailer
+       keeps the upper ~80% of the screen to itself. */
+    --hero-row-h: 49px;
+    --hero-cta-bottom: max(56px, calc(env(safe-area-inset-bottom, 0px) + 44px));
+    --trailer-control-bottom: calc(var(--hero-cta-bottom) + var(--hero-row-h) + 18px);
   }
+
+  /* Re-anchor the CTA row to the bottom edge instead of the plugin's mid-frame
+     `top`. `top: auto` is essential — leaving the plugin's top in place while
+     adding a bottom would stretch the row between the two. */
+  #slides-container .slide .button-container {
+    top: auto !important;
+    bottom: var(--hero-cta-bottom) !important;
+  }
+
+  /* Do NOT anchor .info-container with `bottom`. Unlike .button-container its
+     offset parent is .featured-content, which computes to 0x0, so a bottom
+     offset resolves against a zero-height box and throws the ratings strip to
+     the top of the screen (measured: top=89px). The plugin's own `top` already
+     lands it at ~707px, directly above the re-anchored CTA row, so leave it
+     alone. It shares that band with the trailer chips, which is safe: the chips
+     only appear while a trailer plays, and a playing trailer fades this strip
+     out, so the two are never visible at once. */
 
   #slides-container .volume-toggle,
   #slides-container .pause-button {
