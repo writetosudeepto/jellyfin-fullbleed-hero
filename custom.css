@@ -269,11 +269,18 @@ body:has(#slides-container) .skinHeader.headroom--not-top {
    Taking the tabs out of flow drops the header to a single 56px row and puts
    Home / Favorites on the same line as the hamburger and the right-hand icons.
 
-   The horizontal window is narrow and hand-measured: the hamburger ends at
-   ~48px and the icon cluster starts at ~203px on a 384px viewport, so the tabs
-   are pinned into that gap rather than centred on the viewport — centring
-   would drop them straight on top of the cast/search/avatar icons. */
-@media (max-width: 767px) {
+   The tabs are pinned into the gap between the hamburger and the icon cluster
+   rather than centred on the viewport — centring would drop them straight on
+   top of the cast/search/avatar icons in portrait. The right-hand bound holds
+   in both orientations because .headerRight is the same 186px cluster either
+   way; only the gap in front of it grows.
+
+   The query deliberately keys on EITHER a narrow viewport OR a short one. A
+   phone in landscape is 832x384 here, so a width-only `max-width: 767px` rule
+   does not match it and the header reverted to the stock two-row 107px strip —
+   28% of a 384px-tall screen, with the tabs stranded on a second line. Height
+   is the honest signal for "there is no room for two header rows". */
+@media (max-width: 767px), (max-height: 500px) {
   .skinHeader .headerTabs {
     position: absolute !important;
     top: 0 !important;
@@ -287,6 +294,11 @@ body:has(#slides-container) .skinHeader.headroom--not-top {
     border: 0 !important;
   }
 
+  /* The tabs sit at the left of that gap, right after the hamburger, in both
+     orientations — landscape just has more empty space before the icon
+     cluster. Centring them inside the gap is not attempted: .headerTabs holds
+     an intermediate .emby-tabs wrapper that is sized to its content, so
+     justify-content here has nothing to distribute and silently does nothing. */
   .skinHeader .headerTabs .emby-tabs-slider {
     display: flex !important;
     align-items: center !important;
