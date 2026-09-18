@@ -241,6 +241,13 @@ body:has(#slides-container) .skinHeader.headroom--top {
   box-shadow: none !important;
 }
 
+/* Hide the Jellyfin wordmark in the header. `.pageTitleWithLogo` is only ever
+   the logo variant of the header title, so hiding it leaves real page titles
+   (`.pageTitle` without the modifier) untouched. */
+.pageTitleWithLogo {
+  display: none !important;
+}
+
 /* ── Login page: Futurama 3D scene background (Sketchfab iframe injected by index.html) ── */
 
 /* Oversize vertically so Sketchfab's title bar and control bar are cropped off-screen */
