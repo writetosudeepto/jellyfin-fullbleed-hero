@@ -133,12 +133,25 @@
   }
 }
 
-/* Mobile fail-safe: a trailer iframe can report active while painting a black
-   frame. Keep the hero usable in that state instead of leaving a blank first
-   viewport. */
+/* Trailer opacity must follow the plugin's own .active state.
+
+   This used to be a flat `opacity: 0.82 !important` on .video-container as a
+   fail-safe against an iframe that reports active while painting black. Being
+   stateless and !important, it applied to BOTH states and did two wrong things:
+   while a trailer played, the backdrop image (z-index 3) bled 18% through the
+   video (z-index 4), so every trailer looked like it had the poster ghosted
+   over it; and before playback started it painted the still-loading, usually
+   black YouTube iframe at 82% over an otherwise clean backdrop.
+
+   The plugin only adds .active once YouTube reports PLAYING, so keying off it
+   gives a clean backdrop before playback and an unmixed trailer during it. */
 @media (max-width: 767px) {
   #slides-container .video-container {
-    opacity: 0.82 !important;
+    opacity: 0 !important;
+  }
+
+  #slides-container .video-container.active {
+    opacity: 1 !important;
   }
 
   #slides-container .slide:has(.video-container.active) .logo-container,
