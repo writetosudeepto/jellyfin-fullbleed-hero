@@ -459,6 +459,177 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
   display: none !important;
 }
 
+/* ══ One spacing scale for the phone UI ═══════════════════════════════════
+   Spacing here grew by accretion — Jellyfin's desktop defaults, the Abyss
+   theme, and the mobile fixes above — and never settled. Measured on an
+   S24 Ultra (384x832 CSS px) before this block:
+
+     home rows          13px  / 13px      #homeTab bottom 12px
+     home titles        12.7px / 0        (headings did not line up with cards)
+     library grid       12.7px / 28.8px   page 72px + .pageTabContent 72px = 144px
+     item detail        19.2px / 19.2px   72px
+     detail ribbon      12.7px / 12.7px
+
+   Three gutter values, headings off the card line, and a bottom pad applied
+   twice on inner pages. One scale now, at the compact end.
+
+   Scoped width-OR-height like the header rules: a landscape phone is 832x384,
+   so a width-only query silently skips it. */
+:root {
+  --ui-gutter: 8px;
+  --ui-gap: 10px;
+  --ui-page-bottom: 12px;
+}
+
+@media (max-width: 767px), (max-height: 500px) {
+  /* ── Side gutters ── */
+  .padded-left,
+  .itemsContainer.padded-left {
+    padding-left: var(--ui-gutter) !important;
+  }
+
+  .padded-right,
+  .itemsContainer.padded-right {
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  /* Headings must share the cards' line, or the row reads as misaligned. */
+  .homeSectionsContainer .sectionTitle,
+  .homeSectionsContainer .sectionTitleContainer {
+    padding-left: var(--ui-gutter) !important;
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  /* Home rows do NOT get their gutter from a `padded-left` class — it comes
+     from the <div is="emby-scroller"> wrapper around each row, which carries
+     12.67px and matches no stylesheet rule that can be found from the page
+     (the custom element sets it). Without this the headings moved to 8px while
+     the cards stayed at 13px, i.e. the fix would have *created* a misalignment
+     rather than removing one. */
+  .homeSectionsContainer .emby-scroller {
+    padding-left: var(--ui-gutter) !important;
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  /* Detail pages: the gutter belongs to the OUTER container only. The chain is
+     .detailPagePrimaryContent > .detailSection > .itemDetailsGroup, each of
+     which can carry its own padding, so setting the gutter on all three
+     compounds — measured 8 / 19 / 27px left edges down the nesting instead of
+     one clean line. Outer container owns the gutter, children sit flush.
+
+     .detailPagePrimaryContent needs the compound selector: a plain
+     `.detailPagePrimaryContent { ... !important }` loses to something that
+     holds it at 19.2px. The winning rule could not be identified from the page
+     — the only stylesheet that blocks introspection is the Media Bar CDN sheet,
+     and that file does not contain the selector — but an inline !important was
+     verified to win, so this is a specificity problem, not an ordering one. */
+  .detailPageContent,
+  .page .detailPagePrimaryContent,
+  .detailPagePrimaryContent.padded-right,
+  .detailRibbon {
+    padding-left: var(--ui-gutter) !important;
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  .detailSection,
+  .itemDetailsGroup {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* ── The one deliberate exception ──
+     A library grid's .itemsContainer carries `padded-right-withalphapicker`,
+     and that is what produces the wide right pad. The A-Z index is 22px wide,
+     position:fixed at x357..378, and the rightmost card already sits at x355 —
+     1px of clearance. Collapsing this to --ui-gutter puts the last column
+     underneath the index. The extra 26px is the picker plus breathing room,
+     and it is occupied space, not wasted padding. Must come AFTER the
+     .padded-right rule above to win on source order. */
+  .itemsContainer.padded-right-withalphapicker {
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  /* ── Card junctions on library grids ──
+     Grid posters sat flush against each other: measured h-gap 0 with zero
+     horizontal inset inside the card, so adjacent artwork literally touched.
+
+     A flex `gap` is the obvious fix and it is WRONG here. Jellyfin measures the
+     container and writes each card a fixed pixel width (114px = 342/3 on this
+     viewport, box-sizing: content-box). A gap is added on top of that width, so
+     3 x 114 + 2 x 10 overflows the 342px content box and the third column
+     wraps — the grid drops to 2 per row with ~138px of dead space. Measured on
+     device, not theorised.
+
+     Instead: make the card border-box and inset it with padding. The outer
+     width Jellyfin computed is preserved, so the column count never changes,
+     and the artwork gets an even 5px per side — a 10px channel between
+     neighbours at any column count, portrait or landscape.
+
+     The container's left pad is pulled in by that same 5px so the first
+     poster's edge still lands on the 8px gutter line instead of at 13px. */
+  .itemsContainer.vertical-wrap,
+  .itemsContainer.vertical-grid {
+    padding-left: calc(var(--ui-gutter) - 5px) !important;
+  }
+
+  .itemsContainer.vertical-wrap > .card,
+  .itemsContainer.vertical-grid > .card {
+    box-sizing: border-box !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+  }
+
+  /* .cardBox ships `margin: 8.64px 17.28px 17.28px 0` — a right margin only.
+     That is what actually made the columns look unevenly spaced: the artwork
+     was left-aligned in its cell with ~17px of dead space on its right, so the
+     visual channel was 5 + 5 + 17.28 = 27px while the cells themselves were
+     even. Zero it and the artwork fills the cell, leaving exactly the 10px the
+     padding defines. The bottom margin stays — it is the gap to the title. */
+  .itemsContainer.vertical-wrap .cardBox,
+  .itemsContainer.vertical-grid .cardBox {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* ── End of page ──
+     .pageTabContent is the doubled one: its 72px stacked on top of the page's
+     own 72px for 144px of dead band under the last row. */
+  .page.libraryPage,
+  #moviesPage,
+  #itemDetailPage {
+    padding-bottom: var(--ui-page-bottom) !important;
+  }
+
+  .pageTabContent {
+    padding-bottom: 0 !important;
+  }
+
+  #homeTab {
+    padding-bottom: var(--ui-page-bottom) !important;
+  }
+}
+
+/* The A-Z allowance applies only where the index is actually drawn.
+   Measured: in landscape (832x384) every .alphaPicker is display:none, so
+   reserving 26px for it left the grid visibly off-centre — 8px on the left
+   against 39px of nothing on the right. Portrait keeps the reservation; there
+   the picker is real (22px wide at x357) and the last column would otherwise
+   sit under it. */
+@media (orientation: portrait) {
+  .itemsContainer.padded-right-withalphapicker {
+    padding-right: calc(var(--ui-gutter) + 26px) !important;
+  }
+}
+
+/* Home row card gap, in landscape too. The card WIDTH percentages stay
+   portrait-only (64% of an 832px viewport would be a 532px card), but the gap
+   between cards is orientation-independent and was missing in landscape. */
+@media (max-height: 500px) {
+  .homeSectionsContainer .itemsContainer {
+    gap: var(--ui-gap) !important;
+  }
+}
+
 /* ── Login page: Futurama 3D scene background (Sketchfab iframe injected by index.html) ── */
 
 /* Oversize vertically so Sketchfab's title bar and control bar are cropped off-screen */
