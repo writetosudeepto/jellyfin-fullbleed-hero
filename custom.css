@@ -248,9 +248,9 @@ body:not(:has(#slides-container)) .homeSectionsContainer {
    over a bright backdrop frame. It fades to nothing by the bottom of the bar,
    so it reads as part of the image, not as a bar. Once content scrolls under
    the header, headroom--top is gone and Jellyfin's normal solid bar returns. */
-body:has(#slides-container) .skinHeader,
-body:has(#slides-container) .skinHeader.headroom--top,
-body:has(#slides-container) .skinHeader.headroom--not-top {
+body:has(#indexPage:not(.hide)) .skinHeader,
+body:has(#indexPage:not(.hide)) .skinHeader.headroom--top,
+body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.55) 0%,
@@ -275,13 +275,24 @@ body:has(#slides-container) .skinHeader.headroom--not-top {
    in both orientations because .headerRight is the same 186px cluster either
    way; only the gap in front of it grows.
 
+   Everything here is gated on the HOME page being the visible one. Inside a
+   library the same .headerTabs element holds that library's tabs (Movies /
+   Suggestions / Favorites / Collections / Genres) and .pageTitle carries real
+   text ("Cinema") instead of the logo — pinning the tabs into the top row there
+   dropped the whole tab strip straight on top of the title and the home button.
+   Inner pages therefore keep Jellyfin's stock two-row header.
+
+   #slides-container is NOT a usable "are we on home" test: the Media Bar hero
+   is injected once and stays in the DOM on every route. `#indexPage:not(.hide)`
+   is the real signal — Jellyfin marks the inactive page with .hide.
+
    The query deliberately keys on EITHER a narrow viewport OR a short one. A
    phone in landscape is 832x384 here, so a width-only `max-width: 767px` rule
    does not match it and the header reverted to the stock two-row 107px strip —
    28% of a 384px-tall screen, with the tabs stranded on a second line. Height
    is the honest signal for "there is no room for two header rows". */
 @media (max-width: 767px), (max-height: 500px) {
-  .skinHeader .headerTabs {
+  body:has(#indexPage:not(.hide)) .skinHeader .headerTabs {
     position: absolute !important;
     top: 0 !important;
     left: 52px !important;
@@ -299,14 +310,14 @@ body:has(#slides-container) .skinHeader.headroom--not-top {
      cluster. Centring them inside the gap is not attempted: .headerTabs holds
      an intermediate .emby-tabs wrapper that is sized to its content, so
      justify-content here has nothing to distribute and silently does nothing. */
-  .skinHeader .headerTabs .emby-tabs-slider {
+  body:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tabs-slider {
     display: flex !important;
     align-items: center !important;
     height: 56px !important;
     width: 100% !important;
   }
 
-  .skinHeader .emby-tab-button {
+  body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button {
     font-size: 0.82rem !important;
     padding: 0 8px !important;
     height: 56px !important;
@@ -400,17 +411,45 @@ body:has(#slides-container) .skinHeader.headroom--not-top {
     display: none !important;
   }
 
+  .homeSectionsContainer {
+    padding-bottom: 0 !important;
+  }
+}
+
+/* Trailing space and card corners, on phones in EITHER orientation.
+
+   These are keyed on width-or-height, unlike the card-width percentages above,
+   which must stay portrait-only: 64% of a 832px landscape viewport would be a
+   532px card. #homeTab's flat 72px padding-bottom is what left a dead band
+   under the last row, and in landscape — where the width query never matched —
+   it was still the full 72px on a 384px-tall screen. */
+@media (max-width: 767px), (max-height: 500px) {
   #homeTab {
     padding-bottom: 12px !important;
   }
 
-  .homeSectionsContainer {
-    padding-bottom: 0 !important;
+  .homeSectionsContainer > .verticalSection:empty {
+    display: none !important;
   }
 
   .appfooter {
     display: none !important;
   }
+}
+
+/* Card corners. Jellyfin ships 2.88px, which at phone scale reads as a hard
+   square edge against the artwork. */
+.card .cardImageContainer,
+.card .cardPadder,
+.card .cardImage,
+.card .cardOverlayContainer,
+.card .blurhash-canvas,
+.card .cardScalable {
+  border-radius: 10px !important;
+}
+
+.card .cardBox {
+  border-radius: 12px !important;
 }
 
 /* Hide the Jellyfin wordmark in the header. `.pageTitleWithLogo` is only ever
