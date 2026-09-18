@@ -163,9 +163,16 @@
   }
 
   #slides-container .logo-container,
-  #slides-container .info-container,
   #slides-container .plot-container {
     position: relative;
+    z-index: 8 !important;
+  }
+
+  /* .info-container is excluded for the same reason as .button-container: the
+     plugin anchors it with `position:absolute; top:calc(50% + 10vh)`, and an
+     id+class rule forcing position:relative turns that 499px into a flow
+     offset. It only needs the z-index; it is already positioned. */
+  #slides-container .info-container {
     z-index: 8 !important;
   }
 
@@ -599,6 +606,7 @@ body:has(#slides-container) .skinHeader.headroom--top {
     --hero-row-h: 49px;
     --hero-cta-bottom: max(56px, calc(env(safe-area-inset-bottom, 0px) + 44px));
     --trailer-control-bottom: calc(var(--hero-cta-bottom) + var(--hero-row-h) + 18px);
+    --hero-info-bottom: calc(var(--hero-cta-bottom) + var(--hero-row-h) + 22px);
   }
 
   /* Re-anchor the CTA row to the bottom edge instead of the plugin's mid-frame
@@ -609,14 +617,22 @@ body:has(#slides-container) .skinHeader.headroom--top {
     bottom: var(--hero-cta-bottom) !important;
   }
 
-  /* Do NOT anchor .info-container with `bottom`. Unlike .button-container its
-     offset parent is .featured-content, which computes to 0x0, so a bottom
-     offset resolves against a zero-height box and throws the ratings strip to
-     the top of the screen (measured: top=89px). The plugin's own `top` already
-     lands it at ~707px, directly above the re-anchored CTA row, so leave it
-     alone. It shares that band with the trailer chips, which is safe: the chips
-     only appear while a trailer plays, and a playing trailer fades this strip
-     out, so the two are never visible at once. */
+  /* Ratings strip rides above the CTA row with a real gap. Anchoring by
+     `bottom` only works now that .info-container keeps the plugin's
+     position:absolute (see above) — while it was being forced to relative, a
+     bottom offset was measured against its flow position instead of the slide
+     and threw the strip to y=89, the top of the screen.
+
+     Left to the plugin's own `top` the strip landed at 707..725 with the CTA
+     row starting at 725 — a measured 0px gap, which is what this fixes.
+
+     It shares a band with the trailer chips, which is safe: the chips only
+     appear while a trailer plays, and a playing trailer fades this strip out,
+     so the two are never visible at once. */
+  #slides-container .slide .info-container {
+    top: auto !important;
+    bottom: var(--hero-info-bottom) !important;
+  }
 
   #slides-container .volume-toggle,
   #slides-container .pause-button {
