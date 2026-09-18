@@ -15,7 +15,8 @@
  *      fully intact — no black areas. Trailers are also enabled on phones.
  *   3. Home rows start exactly one viewport down, flush under the hero,
  *      on every client (desktop, mobile web, Android app) — no dead gap.
- *   4. Mobile polish for the Media Bar action buttons / metadata row.
+ *   4. Mobile controls use safe-area-aware portrait and landscape layouts:
+ *      no overlapping Play / Info / Favorite / sound / pause controls.
  *   5. Login page: full-screen Sketchfab 3D scene behind a translucent card.
  *   6. Media Bar action buttons (Info / Play / Favorite): frosted-glass
  *      shapes with modern SVG icons instead of the default white buttons.
@@ -75,6 +76,7 @@
 
 /* Hero fills the whole viewport */
 #slides-container {
+  --hero-button-spacing: 18px;
   height: 100vh !important;
   height: 100dvh !important;
 }
@@ -131,18 +133,112 @@
   }
 }
 
+/* Mobile fail-safe: a trailer iframe can report active while painting a black
+   frame. Keep the hero usable in that state instead of leaving a blank first
+   viewport. */
+@media (max-width: 767px) {
+  #slides-container .video-container {
+    opacity: 0.82 !important;
+  }
+
+  #slides-container .slide:has(.video-container.active) .logo-container,
+  #slides-container:has(.video-container.active) .info-container,
+  #slides-container:has(.video-container.active) .plot-container,
+  #slides-container:has(.video-container.active) .button-container {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  #slides-container .logo-container,
+  #slides-container .info-container,
+  #slides-container .plot-container {
+    position: relative;
+    z-index: 8 !important;
+  }
+
+  /* .button-container must NOT be forced to position:relative. The plugin
+     anchors that row with `position:absolute; top:calc(50% + 25vh)`, so on a
+     832px hero its top resolves to 624px measured from the slide's top edge.
+     Re-declaring position:relative here (an id+class selector, so it beats the
+     plugin's plain .button-container) leaves that same `top:624px` in place but
+     re-interprets it as an offset from the row's *flow* position near the
+     bottom of the slide — pushing Play / Info / Favourite to y=851 in an 832px
+     viewport, i.e. entirely off-screen. It is already absolutely positioned, so
+     z-index applies without any position declaration of ours. */
+  #slides-container .button-container {
+    z-index: 8 !important;
+  }
+}
+
 /* Home rows: sit right below the full-screen hero on ALL clients.
    The abyss spotlight iframe (.featurediframe) duplicates the Media Bar hero,
    sits invisibly behind it, and only exists on some clients — hide it and use
-   a plain margin as the spacer so desktop and mobile behave the same. */
-.featurediframe {
+   a plain margin as the spacer so desktop and mobile behave the same.
+
+   Both rules are gated on the Media Bar hero actually existing. The hero is
+   #slides-container, built at runtime by a script that index.html pulls from
+   cdn.jsdelivr.net (Media Bar plugin) — so it is absent whenever that script
+   did not run: a document cached from before the plugin was installed, a load
+   that raced server startup before the plugin registered its index.html
+   transformation, or the CDN being unreachable. Reserving 100dvh
+   unconditionally turned every one of those into a full viewport of pure black
+   on the home screen, with the real content pushed below the fold and no hint
+   of why. Observed on the Android client (org.jellyfin.mobile) 2026-09-18.
+
+   With the :has() gate, a missing hero degrades instead of breaking: the rows
+   move to the top and the Abyss spotlight iframe — which loads independently
+   and was verified healthy during that failure — is un-hidden to stand in. */
+body:has(#slides-container) .featurediframe {
   display: none !important;
 }
 
-.homeSectionsContainer {
+body:has(#slides-container) .homeSectionsContainer {
   top: 0 !important;
   margin-top: 100vh !important;
   margin-top: 100dvh !important;
+}
+
+/* No Media Bar hero: no reserved viewport, and let the spotlight iframe show. */
+body:not(:has(#slides-container)) .homeSectionsContainer {
+  top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Give the first home heading a deliberate mobile gutter below the hero.
+   Without parent padding, the first section title starts on the exact pixel
+   where the full-height Media Bar ends, making "My Media" look pinned to the
+   backdrop edge. Its horizontal padding already matches the cards, so only
+   add vertical breathing room here. */
+@media (max-width: 767px) {
+  .homeSectionsContainer {
+    padding-top: clamp(8px, 2.5vw, 12px) !important;
+  }
+}
+
+/* ── Full-bleed hero at rest ──
+   .skinHeader is position:fixed with an opaque rgb(32,32,32) background and a
+   backdrop blur while it carries `headroom--top` (i.e. scrolled to the very
+   top). It therefore painted a 107px band over the top of the hero, and the
+   hero only *looked* full-screen after a swipe up, once Jellyfin swapped that
+   class out. Drop the band on the home page — identified by the hero existing
+   at all — so the first viewport is the hero and nothing else.
+
+   A soft top-down scrim replaces the flat fill rather than going fully
+   transparent: the header icons are white and would otherwise be unreadable
+   over a bright backdrop frame. It fades to nothing by the bottom of the bar,
+   so it reads as part of the image, not as a bar. Once content scrolls under
+   the header, headroom--top is gone and Jellyfin's normal solid bar returns. */
+body:has(#slides-container) .skinHeader.headroom--top {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.28) 55%,
+    rgba(0, 0, 0, 0) 100%
+  ) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
 }
 
 /* ── Login page: Futurama 3D scene background (Sketchfab iframe injected by index.html) ── */
@@ -239,6 +335,28 @@
 }
 
 /* Shapes: pill for Play, circles for the icon buttons */
+#slides-container .button-container {
+  gap: 0 !important;
+  column-gap: 0 !important;
+  padding-right: calc(var(--hero-button-spacing) + var(--hero-button-spacing)) !important;
+}
+
+/* Qt WebEngine/Jellyfin Media Player collapses both flex gap and sibling
+   margins in this injected control row. Reserve the extra row width above,
+   then offset the second and third controls explicitly. */
+#slides-container .play-button,
+#slides-container .favorite-button {
+  position: relative !important;
+}
+
+#slides-container .play-button {
+  left: var(--hero-button-spacing, 18px) !important;
+}
+
+#slides-container .favorite-button {
+  left: calc(var(--hero-button-spacing, 18px) + var(--hero-button-spacing, 18px)) !important;
+}
+
 #slides-container .play-button {
   height: 52px;
   padding: 0 26px !important;
@@ -382,10 +500,27 @@
   border-color: rgba(255, 255, 255, 0.38) !important;
 }
 
-/* Volume / pause: glass chips, readable on any scene brightness */
+/* Volume / pause: glass chips, readable on any scene brightness.
+
+   Visibility is deliberately tied to a trailer actually playing. These two
+   chips only control a trailer, and the slot they occupy below the CTA row is
+   shared with .info-container (star rating / tomato / "Ends at ...") — which
+   this stylesheet fades out only while a trailer is active. Forcing the chips
+   visible unconditionally therefore parked them on top of the ratings row on
+   every still slide. Show them exactly when there is something to control. */
+#slides-container:has(.video-container.active) .volume-toggle,
+#slides-container:has(.video-container.active) .pause-button {
+  opacity: 1 !important;
+}
+
+#slides-container:not(:has(.video-container.active)) .volume-toggle,
+#slides-container:not(:has(.video-container.active)) .pause-button {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 #slides-container .volume-toggle,
 #slides-container .pause-button {
-  opacity: 1 !important;
   width: 42px;
   height: 42px;
   display: inline-flex;
@@ -398,6 +533,7 @@
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   text-shadow: none !important;
+  z-index: 9 !important;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
@@ -412,51 +548,82 @@
   font-size: 1.15rem !important;
 }
 
-/* ── Mobile: fix volume / pause button position, size & touch separation ──
-   Plugin CSS puts both at top:8rem, with right:3.5rem (volume) and
-   right:0.8rem (pause). At our 42 px circle size the gap shrinks to ≈1 px,
-   so a finger tap on the sound button often also hits the pause button.
-   Additionally, top:8rem (128 px) puts them inside the Jellyfin nav/tab
-   strip on narrow screens, making them feel cramped.
+/* ── Mobile: anchor trailer sound / pause to the backdrop player ──
+   Plugin CSS places both controls near the upper chrome. On phones that makes
+   them read as stray page buttons instead of trailer controls, and the stock
+   right offsets leave the two circular hit targets almost touching.
 
-   Fix: move both to the bottom-right of the hero, well above the action-
-   button row, with a guaranteed 10 px gap between the two circles.
-   Size drops to 36 px — still a comfortable touch target (≥ 36 px = fine
-   per Android HIG) while being much less obtrusive on a small screen.    */
+   Fix: treat sound + pause as one compact backdrop-player control pair,
+   centered BELOW the main Info / Play / Favorite row.
+
+   The vertical offset is load-bearing, not cosmetic. The plugin anchors
+   .button-container at bottom:156px, so any trailer-control bottom near that
+   value lands on top of the Play button instead of clear of it. Measured on an
+   S24 Ultra (384x832 CSS px) the old max(154px, ...) put the pair at y 628-678
+   while Play occupied 625-675 — a direct overlap on the one control that
+   starts the film. The hero has ~157px of unused space below that row, so the
+   pair sits there with a ~20px breathing gap and can never collide again. */
 @media (max-width: 767px) {
+  #slides-container {
+    --trailer-control-size: 48px;
+    --trailer-control-gap: 12px;
+    /* ABOVE the Info / Play / Favourite row. That row is anchored by the plugin
+       at `top: calc(50% + 25vh)` of the hero, i.e. 0.75 x hero height, so its
+       top edge sits 25vh up from the bottom. Expressing the chips in the same
+       unit keeps the two rows locked together at any viewport height instead of
+       drifting apart on a shorter screen: 25vh clears the CTA row exactly, and
+       the +24px is the visual gap between the two rows. */
+    --trailer-control-bottom: calc(25vh + 24px);
+    --trailer-control-half-row: 54px;
+    --trailer-control-half-gap: 6px;
+  }
+
   #slides-container .volume-toggle,
   #slides-container .pause-button {
+    /* Without this the 1px border makes each chip 50px, not 48px, and the
+       half-row/half-gap maths centres the pair 1px off the CTA row's axis. */
+    box-sizing: border-box !important;
     top: auto !important;
-    bottom: 20% !important;
-    width: 36px !important;
-    height: 36px !important;
+    bottom: var(--trailer-control-bottom) !important;
+    width: var(--trailer-control-size) !important;
+    height: var(--trailer-control-size) !important;
+    right: auto !important;
+    background: rgba(8, 8, 12, 0.58) !important;
+    border-color: rgba(255, 255, 255, 0.36) !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34) !important;
   }
 
-  /* Pause: right edge flush 14 px from the screen edge */
-  #slides-container .pause-button {
-    right: 14px !important;
-  }
-
-  /* Volume: 10 px gap to the left of the pause circle
-     (14 px margin + 36 px pause + 10 px gap = 60 px from right) */
   #slides-container .volume-toggle {
-    right: 60px !important;
+    left: calc(50% - var(--trailer-control-half-row)) !important;
+  }
+
+  #slides-container .pause-button {
+    left: calc(50% + var(--trailer-control-half-gap)) !important;
   }
 
   #slides-container .volume-toggle i,
   #slides-container .pause-button i {
-    font-size: 0.95rem !important;
+    font-size: 1.1rem !important;
   }
 }
 
+/* In mobile landscape, keep the trailer pair low without crowding the shorter viewport. */
+@media (max-width: 767px) and (orientation: landscape) {
+  #slides-container {
+    --trailer-control-bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  }
+}
 
-/* ── Volume / pause button: fix spacing on ALL screen sizes ──
+/* ── Volume / pause button: fix spacing on larger screens ──
    Plugin default: volume right:3.5rem, pause right:0.8rem.
    With 42 px circles the gap is 56-12.8-42 = 1.2 px — they touch.
-   Override right values to give a proper 10 px gap on every device.      */
-#slides-container .pause-button {
-  right: 14px !important;
-}
-#slides-container .volume-toggle {
-  right: 66px !important;
+   Override right values to give a proper 10 px gap. Mobile gets its own
+   safe-area-aware backdrop-player placement above. */
+@media (min-width: 768px) {
+  #slides-container .pause-button {
+    right: 14px !important;
+  }
+  #slides-container .volume-toggle {
+    right: 66px !important;
+  }
 }
