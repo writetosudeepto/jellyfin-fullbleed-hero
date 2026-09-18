@@ -248,7 +248,9 @@ body:not(:has(#slides-container)) .homeSectionsContainer {
    over a bright backdrop frame. It fades to nothing by the bottom of the bar,
    so it reads as part of the image, not as a bar. Once content scrolls under
    the header, headroom--top is gone and Jellyfin's normal solid bar returns. */
-body:has(#slides-container) .skinHeader.headroom--top {
+body:has(#slides-container) .skinHeader,
+body:has(#slides-container) .skinHeader.headroom--top,
+body:has(#slides-container) .skinHeader.headroom--not-top {
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.55) 0%,
@@ -259,6 +261,131 @@ body:has(#slides-container) .skinHeader.headroom--top {
   -webkit-backdrop-filter: none !important;
   border-bottom: 0 !important;
   box-shadow: none !important;
+}
+
+/* ── One header row: tabs live beside the icons ──────────────────────────
+   Stock layout stacks .headerTop (56px of icons) above .headerTabs (51px of
+   Home / Favorites), so the bar costs 107px and reads as two separate strips.
+   Taking the tabs out of flow drops the header to a single 56px row and puts
+   Home / Favorites on the same line as the hamburger and the right-hand icons.
+
+   The horizontal window is narrow and hand-measured: the hamburger ends at
+   ~48px and the icon cluster starts at ~203px on a 384px viewport, so the tabs
+   are pinned into that gap rather than centred on the viewport — centring
+   would drop them straight on top of the cast/search/avatar icons. */
+@media (max-width: 767px) {
+  .skinHeader .headerTabs {
+    position: absolute !important;
+    top: 0 !important;
+    left: 52px !important;
+    right: 190px !important;
+    width: auto !important;
+    height: 56px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: none !important;
+    border: 0 !important;
+  }
+
+  .skinHeader .headerTabs .emby-tabs-slider {
+    display: flex !important;
+    align-items: center !important;
+    height: 56px !important;
+    width: 100% !important;
+  }
+
+  .skinHeader .emby-tab-button {
+    font-size: 0.82rem !important;
+    padding: 0 8px !important;
+    height: 56px !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ── Home rows on phones: density, card shape, rhythm ──────────────────
+   Measured on an S24 Ultra (384x832 CSS px) before this block existed:
+
+     backdrop card   276 x 197  (72% of the viewport — 1.4 cards visible)
+     its image       259 x 146  (a correct 16:9)
+     gap between two cards      0px
+     section title   21.6px type in a 44px block
+     one row         ~333px, so only 2.5 rows fit a screen
+
+   So the images were never square — the card box was, because a desktop-sized
+   two-line text block hangs under a 16:9 image (card ratio 1.28 vs image 1.78),
+   and at 72% width a single card nearly filled the screen. Rows are flex
+   containers whose children carried no gap at all; the only thing separating
+   two cards was 17px of padding inside each one.
+
+   Fix: narrower cards so a row reads as a row, a real gap between them, and
+   phone-scale type so the text block stops dominating the card. */
+@media (max-width: 767px) {
+  .homeSectionsContainer .itemsContainer {
+    gap: 10px !important;
+  }
+
+  .homeSectionsContainer .overflowBackdropCard {
+    width: 56% !important;
+  }
+
+  .homeSectionsContainer .overflowPortraitCard,
+  .homeSectionsContainer .overflowSquareCard {
+    width: 32% !important;
+  }
+
+  /* The card already has 17px of internal horizontal padding that existed only
+     to fake separation. With a real gap it just shrinks the artwork.
+
+     .cardBox also carries margin-bottom: 17.28px — headroom for the focus
+     scale-up on TV, which a touch client never triggers. It is dead space on
+     every card of every row, and with ~10 rows on this home screen it alone
+     accounted for ~170px of the scroll length. */
+  .homeSectionsContainer .cardPadder,
+  .homeSectionsContainer .cardBox {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .homeSectionsContainer .cardBox {
+    margin-bottom: 4px !important;
+  }
+
+  .homeSectionsContainer .cardText {
+    font-size: 0.8rem !important;
+    line-height: 1.3 !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+  }
+
+  .homeSectionsContainer .sectionTitle {
+    font-size: 1.05rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .homeSectionsContainer .sectionTitleContainer {
+    margin-top: 16px !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Trailing dead space under the last row ("Recently Added in YouTube") came
+     from two places: four zero-height but still-rendered .verticalSection
+     placeholders Jellyfin leaves in the flow, and a flat 72px padding-bottom on
+     #homeTab. Keep a small gutter so the last row is not flush to the edge. */
+  .homeSectionsContainer > .verticalSection:empty {
+    display: none !important;
+  }
+
+  #homeTab {
+    padding-bottom: 12px !important;
+  }
+
+  .homeSectionsContainer {
+    padding-bottom: 0 !important;
+  }
+
+  .appfooter {
+    display: none !important;
+  }
 }
 
 /* Hide the Jellyfin wordmark in the header. `.pageTitleWithLogo` is only ever
