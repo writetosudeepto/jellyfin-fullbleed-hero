@@ -872,8 +872,36 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
   pointer-events: none !important;
 }
 
-#slides-container:has(.video-container.active) .arrow {
-  display: none !important;
+/* Slideshow arrows during a trailer.
+
+   These used to be hidden unconditionally as part of the declutter, which is
+   fine on a phone — the plugin's arrows measure 0x0 there and navigation is by
+   swipe — but on the web client the arrows ARE the only way to move between
+   slides, so a playing trailer left the hero with no navigation at all. The
+   plugin defines `.arrow` with no media query, so one rule hit every client.
+
+   Phones keep the hide. Desktop keeps the arrows and just lets them recede,
+   which preserves the intent without removing the control.
+
+   The desktop query needs `min-height` as well: a landscape phone is 832x384
+   and would otherwise match `min-width: 768px` and get the desktop branch. */
+@media (max-width: 767px), (max-height: 500px) {
+  #slides-container:has(.video-container.active) .arrow {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (min-height: 501px) {
+  #slides-container:has(.video-container.active) .arrow {
+    display: flex !important;
+    opacity: 0.45;
+    transition: opacity 0.25s ease;
+  }
+
+  #slides-container:has(.video-container.active) .arrow:hover,
+  #slides-container:has(.video-container.active) .arrow:focus-visible {
+    opacity: 1;
+  }
 }
 
 /* Title recedes while the trailer plays */
