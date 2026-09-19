@@ -208,14 +208,57 @@
    With the :has() gate, a missing hero degrades instead of breaking: the rows
    move to the top and the Abyss spotlight iframe — which loads independently
    and was verified healthy during that failure — is un-hidden to stand in. */
+body.mb-has-slides .featurediframe,
 body:has(#slides-container) .featurediframe {
   display: none !important;
 }
 
+body.mb-has-slides .homeSectionsContainer,
 body:has(#slides-container) .homeSectionsContainer {
   top: 0 !important;
   margin-top: 100vh !important;
   margin-top: 100dvh !important;
+}
+
+/* Jellyfin Media Player's Qt webview reports the Media Bar/viewport geometry
+   differently from Chrome: the visible hero ends much earlier, but the desktop
+   home rows still inherit a large spacer and inner gutter. Keep this scoped to
+   the app via the class added by the injected script. */
+body.mb-jmp.mb-has-slides .homeSectionsContainer,
+html.mb-jmp body.mb-has-slides .homeSectionsContainer {
+  margin-top: clamp(150px, 15vh, 220px) !important;
+  padding-top: 0 !important;
+}
+
+body.mb-has-slides:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer {
+  margin-top: clamp(150px, 15vh, 220px) !important;
+  padding-top: 0 !important;
+}
+
+body.mb-jmp .homeSectionsContainer .sectionTitleContainer {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+body.mb-jmp .homeSectionsContainer .sectionTitle,
+body.mb-jmp .homeSectionsContainer .sectionTitleContainer,
+body.mb-jmp .homeSectionsContainer .emby-scroller,
+body.mb-jmp .homeSectionsContainer .itemsContainer.padded-left,
+body.mb-jmp .homeSectionsContainer .itemsContainer.padded-right {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+body.mb-jmp .homeSectionsContainer .verticalSection:first-child,
+body.mb-jmp .homeSectionsContainer .verticalSection:first-child .sectionTitleContainer {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+body.mb-has-slides:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .verticalSection:first-child,
+body.mb-has-slides:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .verticalSection:first-child .sectionTitleContainer {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 /* No Media Bar hero: no reserved viewport, and let the spotlight iframe show. */
@@ -248,6 +291,12 @@ body:not(:has(#slides-container)) .homeSectionsContainer {
    over a bright backdrop frame. It fades to nothing by the bottom of the bar,
    so it reads as part of the image, not as a bar. Once content scrolls under
    the header, headroom--top is gone and Jellyfin's normal solid bar returns. */
+body.mb-home .skinHeader,
+body.mb-home .skinHeader.headroom--top,
+body.mb-home .skinHeader.headroom--not-top,
+body.layout-mobile.mb-has-slides .skinHeader,
+body.layout-mobile.mb-has-slides .skinHeader.headroom--top,
+body.layout-mobile.mb-has-slides .skinHeader.headroom--not-top,
 body:has(#indexPage:not(.hide)) .skinHeader,
 body:has(#indexPage:not(.hide)) .skinHeader.headroom--top,
 body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
@@ -261,6 +310,22 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
   -webkit-backdrop-filter: none !important;
   border-bottom: 0 !important;
   box-shadow: none !important;
+}
+
+@media (max-width: 767px) {
+  body.layout-mobile.mb-has-slides .skinHeader .headerButton,
+  body.layout-mobile.mb-has-slides .skinHeader .headerButton > button,
+  body.layout-mobile.mb-has-slides .skinHeader .headerLeft button,
+  body.layout-mobile.mb-has-slides .skinHeader .headerRight button,
+  body.layout-mobile.mb-has-slides .skinHeader .paper-icon-button-light,
+  body.layout-mobile.mb-has-slides .skinHeader .emby-button:not(.emby-tab-button) {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
 }
 
 /* ── One header row: tabs live beside the icons ──────────────────────────
@@ -286,12 +351,12 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
    is injected once and stays in the DOM on every route. `#indexPage:not(.hide)`
    is the real signal — Jellyfin marks the inactive page with .hide.
 
-   The query deliberately keys on EITHER a narrow viewport OR a short one. A
-   phone in landscape is 832x384 here, so a width-only `max-width: 767px` rule
-   does not match it and the header reverted to the stock two-row 107px strip —
-   28% of a 384px-tall screen, with the tabs stranded on a second line. Height
-   is the honest signal for "there is no room for two header rows". */
-@media (max-width: 767px), (max-height: 500px) {
+   Narrow viewports use a plain width query. The short-height landscape phone
+   case is handled in a separate .layout-mobile block below; otherwise a
+   windowed desktop/webview that happens to be under 500px tall gets mistaken
+   for a phone and loses the desktop header spacing. */
+@media (max-width: 767px) {
+  body.mb-home .skinHeader .headerTabs,
   body:has(#indexPage:not(.hide)) .skinHeader .headerTabs {
     position: absolute !important;
     top: 0 !important;
@@ -318,6 +383,54 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
   }
 
   body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button {
+    font-size: 0.82rem !important;
+    padding: 0 8px !important;
+    height: 56px !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  body.mb-home .skinHeader .headerTabs .emby-tabs-slider {
+    display: flex !important;
+    align-items: center !important;
+    height: 56px !important;
+    width: 100% !important;
+  }
+
+  body.mb-home .skinHeader .emby-tab-button {
+    font-size: 0.82rem !important;
+    padding: 0 8px !important;
+    height: 56px !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-height: 500px) {
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .headerTabs,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .headerTabs {
+    position: absolute !important;
+    top: 0 !important;
+    left: 52px !important;
+    right: 190px !important;
+    width: auto !important;
+    height: 56px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: none !important;
+    border: 0 !important;
+  }
+
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tabs-slider,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .headerTabs .emby-tabs-slider {
+    display: flex !important;
+    align-items: center !important;
+    height: 56px !important;
+    width: 100% !important;
+  }
+
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button {
     font-size: 0.82rem !important;
     padding: 0 8px !important;
     height: 56px !important;
@@ -418,12 +531,12 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
 
 /* Trailing space and card corners, on phones in EITHER orientation.
 
-   These are keyed on width-or-height, unlike the card-width percentages above,
+   These are keyed on width, plus mobile-client short-height below, unlike the card-width percentages above,
    which must stay portrait-only: 64% of a 832px landscape viewport would be a
    532px card. #homeTab's flat 72px padding-bottom is what left a dead band
    under the last row, and in landscape — where the width query never matched —
    it was still the full 72px on a 384px-tall screen. */
-@media (max-width: 767px), (max-height: 500px) {
+@media (max-width: 767px) {
   #homeTab {
     padding-bottom: 12px !important;
   }
@@ -433,6 +546,20 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
   }
 
   .appfooter {
+    display: none !important;
+  }
+}
+
+@media (max-height: 500px) {
+  .layout-mobile #homeTab {
+    padding-bottom: 12px !important;
+  }
+
+  .layout-mobile .homeSectionsContainer > .verticalSection:empty {
+    display: none !important;
+  }
+
+  .layout-mobile .appfooter {
     display: none !important;
   }
 }
@@ -473,15 +600,15 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
    Three gutter values, headings off the card line, and a bottom pad applied
    twice on inner pages. One scale now, at the compact end.
 
-   Scoped width-OR-height like the header rules: a landscape phone is 832x384,
-   so a width-only query silently skips it. */
+   Scoped by width. Short-height landscape phones get the same scale from the
+   .layout-mobile block below, without catching windowed desktop webviews. */
 :root {
   --ui-gutter: 8px;
   --ui-gap: 10px;
   --ui-page-bottom: 12px;
 }
 
-@media (max-width: 767px), (max-height: 500px) {
+@media (max-width: 767px) {
   /* ── Side gutters ── */
   .padded-left,
   .itemsContainer.padded-left {
@@ -609,6 +736,79 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
   }
 }
 
+@media (max-height: 500px) {
+  .layout-mobile .padded-left,
+  .layout-mobile .itemsContainer.padded-left {
+    padding-left: var(--ui-gutter) !important;
+  }
+
+  .layout-mobile .padded-right,
+  .layout-mobile .itemsContainer.padded-right {
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  .layout-mobile .homeSectionsContainer .sectionTitle,
+  .layout-mobile .homeSectionsContainer .sectionTitleContainer {
+    padding-left: var(--ui-gutter) !important;
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  .layout-mobile .homeSectionsContainer .emby-scroller {
+    padding-left: var(--ui-gutter) !important;
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  .layout-mobile .detailPageContent,
+  .layout-mobile .page .detailPagePrimaryContent,
+  .layout-mobile .detailPagePrimaryContent.padded-right,
+  .layout-mobile .detailRibbon {
+    padding-left: var(--ui-gutter) !important;
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  .layout-mobile .detailSection,
+  .layout-mobile .itemDetailsGroup {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .layout-mobile .itemsContainer.padded-right-withalphapicker {
+    padding-right: var(--ui-gutter) !important;
+  }
+
+  .layout-mobile .itemsContainer.vertical-wrap,
+  .layout-mobile .itemsContainer.vertical-grid {
+    padding-left: calc(var(--ui-gutter) - 5px) !important;
+  }
+
+  .layout-mobile .itemsContainer.vertical-wrap > .card,
+  .layout-mobile .itemsContainer.vertical-grid > .card {
+    box-sizing: border-box !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+  }
+
+  .layout-mobile .itemsContainer.vertical-wrap .cardBox,
+  .layout-mobile .itemsContainer.vertical-grid .cardBox {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .layout-mobile .page.libraryPage,
+  .layout-mobile #moviesPage,
+  .layout-mobile #itemDetailPage {
+    padding-bottom: var(--ui-page-bottom) !important;
+  }
+
+  .layout-mobile .pageTabContent {
+    padding-bottom: 0 !important;
+  }
+
+  .layout-mobile #homeTab {
+    padding-bottom: var(--ui-page-bottom) !important;
+  }
+}
+
 /* The A-Z allowance applies only where the index is actually drawn.
    Measured: in landscape (832x384) every .alphaPicker is display:none, so
    reserving 26px for it left the grid visibly off-centre — 8px on the left
@@ -625,7 +825,7 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
    portrait-only (64% of an 832px viewport would be a 532px card), but the gap
    between cards is orientation-independent and was missing in landscape. */
 @media (max-height: 500px) {
-  .homeSectionsContainer .itemsContainer {
+  .layout-mobile .homeSectionsContainer .itemsContainer {
     gap: var(--ui-gap) !important;
   }
 }
