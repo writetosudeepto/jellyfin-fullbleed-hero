@@ -1,2 +1,30 @@
 # Local Claude Code settings (contains machine-specific permissions/keys)
 .claude/
+
+# Machine-local Sonarr runtime and state (downloaded/configured on this server)
+ops/sonarr/app/
+ops/sonarr/data/
+ops/sonarr/*.zip
+sonarr-library/
+
+# ── Never publish: this repo's remote is PUBLIC ────────────────────────────
+# CLAUDE.md holds Jellyfin/Radarr/Prowlarr/qBittorrent API keys and a user
+# password; ops/ holds config backups and databases carrying the same.
+CLAUDE.md
+ops/
+*.key
+*.crt
+
+# Machine-local scratch: session transcripts, handoff notes, debug captures.
+session-*.md
+*-handoff-document-*.txt
+*.txtt
+jellyfin-debug-current.xml
+mobile-view-fix.txt
+artifacts/
+subtitle-output/
+jellyfin-android-audio/
+.avatar-upload/
+.codex-remote-attachments/
+*.png
+*.zip
