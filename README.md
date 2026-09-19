@@ -10,7 +10,10 @@ Built on top of:
 | Hero / trailer slideshow | [Media Bar](https://github.com/IAmParadox27/jellyfin-plugin-media-bar) plugin (slideshow by M0RPH3US) |
 | Plugin injection | [File Transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) plugin |
 
-Everything in this repo is pure **Custom CSS** — no web files are modified, so it survives Jellyfin updates and applies to every client that renders the server's web UI.
+The layout is Custom CSS, with a small JavaScript Injector compatibility patch
+for reliable mobile controls and trailer fallback. No Jellyfin web files are
+modified, so the changes survive Jellyfin updates and apply to every client
+that renders the server's web UI.
 
 ## What the CSS fixes
 
@@ -22,12 +25,27 @@ Out of the box, the Abyss + Media Bar combo has three quirks this stylesheet cor
 
 3. **Desktop/mobile inconsistency.** The spacer iframe only exists on clients that receive the patched desktop web bundle, so any layout that depends on it breaks on phones (rows overlapping the hero at the top of the page). The margin approach in this CSS behaves identically everywhere. A few extra rules also tidy up the Media Bar's action buttons and metadata row on narrow screens.
 
+4. **Overlapping mobile controls.** The plugin's main action row and trailer controls can resolve to the same vertical position on tall phones. Portrait layouts now use two centered, safe-area-aware rows: sound/pause above and Info/Play/Favorite below. Landscape layouts place content actions bottom-left and trailer controls bottom-right. Every control keeps at least a 48px touch target, and the Play action has a clear primary visual treatment.
+
+5. **Mobile audio and unreliable trailers.** The compatibility script keeps
+   unmute inside the user's touch gesture, avoids starting hidden preloaded
+   trailers, retries alternate Jellyfin trailer links after YouTube errors, and
+   restores the poster plus slideshow timer when no trailer can play.
+
+6. **Concurrent background trailers.** Repeated backdrop changes can leave a
+   preloaded YouTube player finishing its delayed startup after it is hidden.
+   The script enforces a single active trailer: every previous/hidden player is
+   muted and paused on slide changes and whenever a non-current player reports
+   that it started playing.
+
 ## Install
 
 1. Install the **Media Bar** plugin (and its **File Transformation** dependency) from the Jellyfin plugin catalog, then restart Jellyfin.
 2. Open **Dashboard → General → Branding → Custom CSS**.
 3. Paste the entire contents of [`custom.css`](custom.css) and save.
-4. Refresh your clients (hard-refresh the browser / clear the app cache if the old style lingers).
+4. Install **JavaScript Injector**, add an enabled script named `Media Bar
+   AutoCrop`, and paste [`mediabar-autocrop.js`](mediabar-autocrop.js).
+5. Refresh your clients (hard-refresh the browser / clear the app cache if the old style lingers).
 
 The Abyss theme itself is pulled in by the `@import` at the top of the file — you don't need to install it separately. If you already have your own Custom CSS, keep your rules and append everything below the *Media Bar: full-viewport edge-to-edge hero* comment block.
 
