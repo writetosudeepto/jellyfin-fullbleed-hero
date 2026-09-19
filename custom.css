@@ -279,7 +279,14 @@ body.mb-jmp .homeSectionsContainer .itemsContainer.padded-right {
    excluded, falls through to Jellyfin stock. Stock is a *percentage*
    (`.padded-left` and the <div is="emby-scroller"> row wrapper each carry
    `padding-left: 3.3%`), so the rows started 77.9px in at 1902px wide and kept
-   growing with the monitor. Gate on the layout instead of the browser.
+   growing with the monitor. Gate on the layout instead of the browser --
+   and gate POSITIVELY, on html.layout-desktop. Jellyfin puts layout-mobile /
+   layout-desktop on the <html> element, NOT on <body>, so the obvious
+   `body:not(.layout-mobile)` is ALWAYS true in the Android app and leaked
+   every rule below onto phones (measured: html layout-mobile=true, body
+   layout-mobile=false). JMP carries layout-desktop too, so one positive guard
+   covers both desktop clients; and if the class were ever missing the gutter
+   just falls back to stock, which fails far better than leaking onto mobile.
 
    Three inherited insets have to be flattened or 24px is merely *added* to
    them: Abyss's 7px on .homeSectionsContainer, its .4em margin on .sectionTitle
@@ -293,34 +300,34 @@ body.mb-jmp .homeSectionsContainer .itemsContainer.padded-right {
    second shape twice (48px). So the gutter goes on .padded-left — the element
    that actually carries the stock 3.3% in *both* shapes — and a nested
    .sectionTitle is explicitly zeroed. */
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer {
+html.layout-desktop body .homeSectionsContainer {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .padded-left,
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .emby-scroller {
+html.layout-desktop body .homeSectionsContainer .padded-left,
+html.layout-desktop body .homeSectionsContainer .emby-scroller {
   padding-left: 24px !important;
 }
 
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .padded-right,
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .emby-scroller {
+html.layout-desktop body .homeSectionsContainer .padded-right,
+html.layout-desktop body .homeSectionsContainer .emby-scroller {
   padding-right: 24px !important;
 }
 
 /* Nested heading: the container already owns the gutter. */
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .sectionTitleContainer .sectionTitle {
+html.layout-desktop body .homeSectionsContainer .sectionTitleContainer .sectionTitle {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .sectionTitle {
+html.layout-desktop body .homeSectionsContainer .sectionTitle {
   margin-left: 0 !important;
 }
 
 /* Only the FIRST card — every card carries this margin, and zeroing it
    everywhere would close the gaps between cards, not just the leading one. */
-body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .itemsContainer > .card:first-child > .cardBox {
+html.layout-desktop body .homeSectionsContainer .itemsContainer > .card:first-child > .cardBox {
   margin-left: 0 !important;
 }
 
