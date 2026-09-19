@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Jellyfin — Full-Bleed Media Bar Hero
  *
  * Base theme: Abyss (https://github.com/AumGupta/abyss-jellyfin)
@@ -208,32 +208,53 @@
    With the :has() gate, a missing hero degrades instead of breaking: the rows
    move to the top and the Abyss spotlight iframe — which loads independently
    and was verified healthy during that failure — is un-hidden to stand in. */
-body.mb-has-slides .featurediframe,
+/* The class rule and the :has() rule below say the same thing on purpose, and
+   they MUST stay split into separate rules.
+
+   Jellyfin Media Player 1.12 runs QtWebEngine 5.15.2 = Chromium 83, which has
+   neither :has() (Chromium 105) nor dvh units (108). An unsupported selector
+   invalidates the ENTIRE comma-separated list, so while each of these was a
+   single rule with both selectors, BOTH rules were dropped wholesale in JMP --
+   the class half died together with the :has() half. Measured there at
+   2560x1440 on 2026-09-19, that cost:
+       860px   .featurediframe never hidden (the Abyss spotlight iframe)
+     + 936px   top: 0 never landed, so the Media Bar's own `top: 65vh` survived
+     + 216px   the clamp() override that used to sit here
+     = home rows at y=2012 beneath a 1440px hero, i.e. 572px of dead black.
+   Split like this, Chromium 83 keeps the class rule and discards only the
+   :has() one, and `margin-top: 100dvh` falls back to the `100vh` line above it.
+   Chrome matches both rules and is unchanged either way.
+
+   Do not "tidy" these back into one selector list. */
+body.mb-has-slides .featurediframe {
+  display: none !important;
+}
+
 body:has(#slides-container) .featurediframe {
   display: none !important;
 }
 
-body.mb-has-slides .homeSectionsContainer,
+body.mb-has-slides .homeSectionsContainer {
+  top: 0 !important;
+  margin-top: 100vh !important;
+  margin-top: 100dvh !important;
+}
+
 body:has(#slides-container) .homeSectionsContainer {
   top: 0 !important;
   margin-top: 100vh !important;
   margin-top: 100dvh !important;
 }
 
-/* Jellyfin Media Player's Qt webview reports the Media Bar/viewport geometry
-   differently from Chrome: the visible hero ends much earlier, but the desktop
-   home rows still inherit a large spacer and inner gutter. Keep this scoped to
-   the app via the class added by the injected script. */
-body.mb-jmp.mb-has-slides .homeSectionsContainer,
-html.mb-jmp body.mb-has-slides .homeSectionsContainer {
-  margin-top: clamp(150px, 15vh, 220px) !important;
-  padding-top: 0 !important;
-}
-
-body.mb-has-slides:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer {
-  margin-top: clamp(150px, 15vh, 220px) !important;
-  padding-top: 0 !important;
-}
+/* There is deliberately no JMP-specific spacer any more. The override that used
+   to live here set `margin-top: clamp(150px, 15vh, 220px)` on the theory that
+   "the Qt webview reports the viewport differently, the visible hero ends much
+   earlier". It does not -- measured in JMP, #slides-container is 0..1440 in a
+   1440px viewport, exactly as in Chrome. The gap was the dropped rule above,
+   and the clamp was treating a symptom. It was dead everywhere else anyway:
+   `body:has(#slides-container)` scores an ID, so it outranked the clamp in
+   every :has()-capable browser. One plain `margin-top: 100vh` is now correct
+   on all of them. */
 
 body.mb-jmp .homeSectionsContainer .sectionTitleContainer {
   margin-top: 0 !important;
@@ -247,6 +268,60 @@ body.mb-jmp .homeSectionsContainer .itemsContainer.padded-left,
 body.mb-jmp .homeSectionsContainer .itemsContainer.padded-right {
   padding-left: 24px !important;
   padding-right: 24px !important;
+}
+
+/* Same 24px gutter for desktop *browsers*, Chrome included.
+
+   The rule above can never reach Chrome: it is gated on body.mb-jmp, and
+   isJellyfinMediaPlayer() in mediabar-autocrop.js sets that class only for
+   `isQt || (isDesktopWidth && !isChromiumBrowser)` — so the Qt app and desktop
+   Firefox/Safari get the tight gutter and Chrome, the one browser explicitly
+   excluded, falls through to Jellyfin stock. Stock is a *percentage*
+   (`.padded-left` and the <div is="emby-scroller"> row wrapper each carry
+   `padding-left: 3.3%`), so the rows started 77.9px in at 1902px wide and kept
+   growing with the monitor. Gate on the layout instead of the browser.
+
+   Three inherited insets have to be flattened or 24px is merely *added* to
+   them: Abyss's 7px on .homeSectionsContainer, its .4em margin on .sectionTitle
+   and its .6em margin on .cardBox. The last two are also why headings and cards
+   do not line up on desktop today.
+
+   Two shapes of row exist and they must not both be padded — measured live:
+     My Media / Continue Watching   .verticalSection > .sectionTitle.padded-left
+     Next Up / Recently Added in X  .verticalSection > .sectionTitleContainer.padded-left > .sectionTitle
+   Padding .sectionTitle and .sectionTitleContainer alike would indent the
+   second shape twice (48px). So the gutter goes on .padded-left — the element
+   that actually carries the stock 3.3% in *both* shapes — and a nested
+   .sectionTitle is explicitly zeroed. */
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .padded-left,
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .emby-scroller {
+  padding-left: 24px !important;
+}
+
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .padded-right,
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .emby-scroller {
+  padding-right: 24px !important;
+}
+
+/* Nested heading: the container already owns the gutter. */
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .sectionTitleContainer .sectionTitle {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .sectionTitle {
+  margin-left: 0 !important;
+}
+
+/* Only the FIRST card — every card carries this margin, and zeroing it
+   everywhere would close the gaps between cards, not just the leading one. */
+body:not(.layout-mobile):not(.layout-tv) .homeSectionsContainer .itemsContainer > .card:first-child > .cardBox {
+  margin-left: 0 !important;
 }
 
 body.mb-jmp .homeSectionsContainer .verticalSection:first-child,
@@ -358,12 +433,28 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
 @media (max-width: 767px) {
   body.mb-home .skinHeader .headerTabs,
   body:has(#indexPage:not(.hide)) .skinHeader .headerTabs {
+    /* Jellyfin's own .headerTabs carries a NEGATIVE margin-top -- it is stock
+       layout pulling the tab strip up under .headerTop. Taking the element out
+       of flow with position/top does not cancel a margin, so it kept applying
+       on top of `top: 0` and dragged the tabs off the top of the header.
+       Measured on an emulated SM-S928B: -31.68px in portrait (tabs clipped and
+       sitting high, i.e. "misaligned") and -77.62px in landscape, which is more
+       than this element's own 64px height -- so the whole strip ended up above
+       y=0 and became invisible. The margin is font-size derived, so it grows
+       exactly when the viewport gets wider, which is why landscape was worse.
+
+       Height is 100% of .skinHeader rather than a hard 56px so `align-items:
+       center` centres the strip on the real header box. .headerLeft is already
+       centred there (both centre on y=46.9 at 412x915), so the tabs line up
+       with the hamburger and the icon cluster at any header height. */
     position: absolute !important;
     top: 0 !important;
     left: 52px !important;
     right: 190px !important;
     width: auto !important;
-    height: 56px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
     display: flex !important;
     align-items: center !important;
     background: none !important;
@@ -388,6 +479,42 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
     height: 56px !important;
     min-width: 0 !important;
   }
+
+  /* Flat text tabs on the home header — no capsule.
+
+     The pill is entirely Abyss's, and nothing here ever cancelled it:
+       .emby-tabs-slider   border-radius: 50px + glass-tint background + border + shadow
+       .emby-tab-button    border-radius: 50px + 3px transparent border
+       .emby-tab-button-active  background: accent !important; color: #121212 !important
+     The rules above set only geometry, and `height: 56px; width: 100%` on the
+     slider actually *stretched* that capsule into a full-width rounded bar.
+
+     .emby-tab-button-active has to be named explicitly — Abyss sets its
+     background and colour with !important, so a rule matching only
+     .emby-tab-button loses to it. Active state is carried by weight and
+     opacity instead, so the row reads as plain text. */
+  body:has(#indexPage:not(.hide)) .skinHeader .emby-tabs,
+  body:has(#indexPage:not(.hide)) .skinHeader .emby-tabs-slider,
+  body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button,
+  body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button-active {
+    background: none !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button {
+    color: rgba(255, 255, 255, .55) !important;
+    font-weight: 400 !important;
+  }
+
+  body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button-active {
+    color: #fff !important;
+    font-weight: 600 !important;
+  }
 }
 
 @media (max-width: 767px) {
@@ -404,17 +531,59 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
     height: 56px !important;
     min-width: 0 !important;
   }
+
+  /* Flat text tabs — .mb-home twin of the block above. */
+  body.mb-home .skinHeader .emby-tabs,
+  body.mb-home .skinHeader .emby-tabs-slider,
+  body.mb-home .skinHeader .emby-tab-button,
+  body.mb-home .skinHeader .emby-tab-button-active {
+    background: none !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.mb-home .skinHeader .emby-tab-button {
+    color: rgba(255, 255, 255, .55) !important;
+    font-weight: 400 !important;
+  }
+
+  body.mb-home .skinHeader .emby-tab-button-active {
+    color: #fff !important;
+    font-weight: 600 !important;
+  }
 }
 
 @media (max-height: 500px) {
   body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .headerTabs,
   html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .headerTabs {
+    /* Same negative-margin cancellation as the portrait block above (see there
+       for the measurements); in landscape the stock margin-top is -77.62px,
+       more than this element's own height, which is why the tabs vanished
+       entirely rather than merely sitting high.
+
+       The horizontal inset has to differ from portrait's. .headerLeft's padding
+       and the header buttons do not scale with viewport width -- they switch by
+       orientation and are then identical at 360px and 800px:
+                     headerLeft padding-left   hamburger box   right edge
+         portrait           12px                 36.2px          52.3px
+         landscape          31px                 40px            75.2px
+       so portrait's `left: 52px` put "Home" 18px underneath the hamburger here.
+       The right bound is a fixed offset too, the icon cluster being
+       right-anchored: 181.7px portrait, 212.3px landscape. env() is added so a
+       notch inset on a real handset shifts the tabs by the same amount it
+       shifts the icons; it resolves to 0 where there is no inset. */
     position: absolute !important;
     top: 0 !important;
-    left: 52px !important;
-    right: 190px !important;
+    left: calc(80px + env(safe-area-inset-left, 0px)) !important;
+    right: calc(220px + env(safe-area-inset-right, 0px)) !important;
     width: auto !important;
-    height: 56px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
     display: flex !important;
     align-items: center !important;
     background: none !important;
@@ -435,6 +604,36 @@ body:has(#indexPage:not(.hide)) .skinHeader.headroom--not-top {
     padding: 0 8px !important;
     height: 56px !important;
     min-width: 0 !important;
+  }
+
+  /* Flat text tabs — landscape-phone twin of the portrait block above. */
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .emby-tabs,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .emby-tabs,
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .emby-tabs-slider,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .emby-tabs-slider,
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button,
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button-active,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button-active {
+    background: none !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button {
+    color: rgba(255, 255, 255, .55) !important;
+    font-weight: 400 !important;
+  }
+
+  body.layout-mobile:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button-active,
+  html.layout-mobile body:has(#indexPage:not(.hide)) .skinHeader .emby-tab-button-active {
+    color: #fff !important;
+    font-weight: 600 !important;
   }
 }
 
